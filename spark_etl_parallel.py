@@ -53,7 +53,7 @@ spark = SparkSession.builder.getOrCreate()
 config = read_config("adventureworks_raw.elt_config") #change to your control dataset.table
 
 q = Queue()
-worker_count = 30
+worker_count = 10
 
 for row in config:
     q.put([row["sourceTableName"], row["targetTableName"]])
