@@ -1,9 +1,10 @@
 from pyspark.sql import SparkSession
 
 database = ""
-db_url = f"jdbc:sqlserver://ipaddresshere;databaseName={database};encrypt=true;trustServerCertificate=true;"
+source_ip = "10.2.0.2:1433"
+db_url = f"jdbc:sqlserver://{source_ip};databaseName={database};encrypt=true;trustServerCertificate=true;"
 db_user = ""
-db_password = "P"
+db_password = ""
 
 def read_config(table):
 
