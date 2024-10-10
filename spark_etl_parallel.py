@@ -1,16 +1,29 @@
 from pyspark.sql import SparkSession
-from threading import Thread
-from queue import Queue
+import concurrent.futures
+from google.cloud import secretmanager
+import sys
 
-# Source variables
-database = ""
-source_ip = "10.2.0.2:1433"
-db_url = f"jdbc:sqlserver://{source_ip};databaseName={database};encrypt=true;trustServerCertificate=true;"
-db_user = ""
-db_password = ""
+def access_secret(project_id, secret_id, version_id="latest"):
+    """
+    Access the payload for the given secret
+    """
+
+    # Create the Secret Manager client.
+    client = secretmanager.SecretManagerServiceClient()
+
+    # Build the resource name of the secret version.
+    name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
+
+    # Access the secret version.
+    response = client.access_secret_version(request={"name": name})
+
+    payload = response.payload.data.decode("UTF-8")
+    return payload
 
 def read_config(table):
-
+    """
+    Read the ETL source to target mapping configuration
+    """    
     config_df = (
         spark.read
         .format("bigquery")
@@ -21,7 +34,10 @@ def read_config(table):
     config = config_df.collect()
     return config
 
-def load_table(source, target):
+def extract_load(source, target):
+    """
+    Read from source and load to target
+    """        
     print(f'source: {source}')
     print(f'target: {target}')
 
@@ -40,27 +56,31 @@ def load_table(source, target):
     .format('bigquery') \
     .mode("overwrite") \
     .option("writeMethod", "direct") \
-    .save(target)   
+    .option("table", f"{dataset_name}.{target}") \
+    .save()
 
-def run_tasks(function, q):
-    while not q.empty():
-        value = q.get()
-        function(value[0], value[1])
-        q.task_done()    
+if __name__ == "__main__":
+        
+    spark = SparkSession.builder.getOrCreate()
 
-spark = SparkSession.builder.getOrCreate()
+    # Parse arguments
+    project_id = sys.argv[1]
 
-config = read_config("adventureworks_raw.elt_config") #change to your control dataset.table
+    # Retrieve secret manager secrets
+    db_user = access_secret(project_id, "airflow-variables-cloudsql-username")
+    db_password = access_secret(project_id, "airflow-variables-cloudsql-password")
+    db_ip = access_secret(project_id, "airflow-variables-cloudsql-ip")    
 
-q = Queue()
-worker_count = 10
+    # Source variables
+    database = "AdventureWorks2022"
+    db_url = f"jdbc:sqlserver://{db_ip};databaseName={database};encrypt=true;trustServerCertificate=true;"
 
-for row in config:
-    q.put([row["sourceTableName"], row["targetTableName"]])
+    # Sink variables
+    dataset_name = "adventureworks_raw"
 
-for i in range(worker_count):
-    t=Thread(target=run_tasks, args=(load_table, q))
-    t.daemon = True
-    t.start()
+    # Read ETL configuration
+    config = read_config("adventureworks_raw.elt_config")
 
-q.join()
+    # Execute extract and load in parallel up to max_workers
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        results = {executor.submit(extract_load, row["sourceTableName"], row["targetTableName"]) for row in config}
