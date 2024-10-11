@@ -60,7 +60,7 @@ def dataproc_parallel():
         task_id='bq_truncate_temp',
         configuration={
             'query': {
-                'query': f"CALL {PROJECT_ID}.adventureworks_temp.TruncateTables();",
+                'query': f"CALL `{PROJECT_ID}.adventureworks_temp`.TruncateTables();",
                 'useLegacySql': False,
             },
         }
@@ -70,7 +70,7 @@ def dataproc_parallel():
         task_id='bq_merge_tables',
         configuration={
             'query': {
-                'query': f"CALL {PROJECT_ID}.adventureworks_raw.MergeAllTables();",
+                'query': f"CALL `{PROJECT_ID}.adventureworks_raw`.MergeAllTables();",
                 'useLegacySql': False,
             },
         }

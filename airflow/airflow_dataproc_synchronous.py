@@ -56,22 +56,22 @@ def dataproc_synchronous():
     )
 
     bq_truncate_temp = BigQueryInsertJobOperator(
-        task_id='bq_truncate_temp',
+        task_id="bq_truncate_temp",
         configuration={
-            'query': {
-                'query': f"CALL {PROJECT_ID}.adventureworks_temp.TruncateTables();",
-                'useLegacySql': False,
-            },
+            "query": {
+                "query": f"CALL `{PROJECT_ID}.adventureworks_temp`.TruncateTables();"
+                , "useLegacySql": False
+            }
         }
     )    
 
     bq_merge_tables = BigQueryInsertJobOperator(
-        task_id='bq_merge_tables',
+        task_id="bq_merge_tables",
         configuration={
-            'query': {
-                'query': f"CALL {PROJECT_ID}.adventureworks_raw.MergeAllTables();",
-                'useLegacySql': False,
-            },
+            "query": {
+                "query": f"CALL `{PROJECT_ID}.adventureworks_raw`.MergeAllTables();"
+                , "useLegacySql": False
+            }
         }
     )
 
