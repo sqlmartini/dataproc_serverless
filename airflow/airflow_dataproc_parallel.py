@@ -56,16 +56,6 @@ def dataproc_parallel():
         batch_id=BATCH_ID
     )
 
-    bq_truncate_temp = BigQueryInsertJobOperator(
-        task_id='bq_truncate_temp',
-        configuration={
-            'query': {
-                'query': f"CALL `{PROJECT_ID}.adventureworks_temp`.TruncateTables();",
-                'useLegacySql': False,
-            },
-        }
-    )
-
     bq_merge_raw = BigQueryInsertJobOperator(
         task_id='bq_merge_tables',
         configuration={
@@ -76,6 +66,6 @@ def dataproc_parallel():
         }
     )    
 
-    bq_truncate_temp >> run_spark >> bq_merge_raw
+    run_spark >> bq_merge_raw
 
 dataproc_parallel()

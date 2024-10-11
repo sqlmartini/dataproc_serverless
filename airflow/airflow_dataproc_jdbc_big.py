@@ -10,7 +10,7 @@ from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobO
 @dag(
     start_date=datetime(2024, 1, 1), schedule=None, catchup=False
 )
-def dataproc_synchronous():
+def dataproc_jdbc_big():
 
     # Airflow environment variables
     PROJECT_ID = os.environ['ENV_PROJECT_ID'] 
@@ -55,16 +55,6 @@ def dataproc_synchronous():
         batch_id=BATCH_ID
     )
 
-    bq_merge_tables = BigQueryInsertJobOperator(
-        task_id="bq_merge_tables",
-        configuration={
-            "query": {
-                "query": f"CALL `{PROJECT_ID}.adventureworks_raw`.MergeAllTables();"
-                , "useLegacySql": False
-            }
-        }
-    )
+    run_spark
 
-    run_spark >> bq_merge_tables
-
-dataproc_synchronous()
+dataproc_jdbc_big()
