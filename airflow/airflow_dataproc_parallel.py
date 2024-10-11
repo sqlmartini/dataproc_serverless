@@ -5,6 +5,8 @@ import string
 from airflow.decorators import dag
 from airflow.models import Variable
 from airflow.providers.google.cloud.operators.dataproc import DataprocCreateBatchOperator
+from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
+
 
 @dag(
     start_date=datetime(2024, 1, 1), schedule=None, catchup=False
