@@ -57,7 +57,7 @@ def dataproc_parallel():
     )
 
     bq_truncate_temp = BigQueryInsertJobOperator(
-        task_id='bq_merge_tables',
+        task_id='bq_truncate_temp',
         configuration={
             'query': {
                 'query': f"CALL {PROJECT_ID}.adventureworks_temp.TruncateTables();",
