@@ -75,6 +75,6 @@ def dataproc_synchronous():
         }
     )
 
-    bq_truncate_temp > run_spark > bq_merge_tables
+    bq_truncate_temp >> run_spark >> bq_merge_tables
 
 dataproc_synchronous()

@@ -76,6 +76,6 @@ def dataproc_parallel():
         }
     )    
 
-    bq_truncate_temp > run_spark > bq_merge_raw
+    bq_truncate_temp >> run_spark >> bq_merge_raw
 
 dataproc_parallel()
