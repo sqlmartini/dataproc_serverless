@@ -10,7 +10,7 @@ from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobO
 @dag(
     start_date=datetime(2024, 1, 1), schedule=None, catchup=False
 )
-def dataproc_jdbc_big():
+def dataproc_jdbc_singlethread():
 
     # Airflow environment variables
     PROJECT_ID = os.environ['ENV_PROJECT_ID'] 
@@ -21,7 +21,7 @@ def dataproc_jdbc_big():
     # Airflow secret backend - google cloud secret manager
     SERVICE_ACCOUNT_ID = Variable.get('dataproc-service-account')
 
-    JOB_FILE = f"{DATAPROC_BUCKET}/scripts/pyspark/spark_jdbc_parallel.py"
+    JOB_FILE = f"{DATAPROC_BUCKET}/scripts/pyspark/spark_jdbc_singlethread.py"
     JAR_FILE = f"{DATAPROC_BUCKET}/drivers/mssql-jdbc-12.4.0.jre8.jar"
 
     # This is to add a random suffix to the serverless Spark batch ID that needs to be unique each run 
@@ -57,4 +57,4 @@ def dataproc_jdbc_big():
 
     run_spark
 
-dataproc_jdbc_big()
+dataproc_jdbc_singlethread()
