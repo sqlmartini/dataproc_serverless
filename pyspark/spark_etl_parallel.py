@@ -54,7 +54,7 @@ def extract_load(source, target):
         .load()
     )
 
-   (load_df.write
+    (load_df.write
         .format('bigquery')
         .mode("overwrite")
         .option("writeMethod", "direct")

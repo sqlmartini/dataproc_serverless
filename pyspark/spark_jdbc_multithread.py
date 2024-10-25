@@ -19,7 +19,26 @@ def access_secret(project_id, secret_id, version_id="latest"):
     payload = response.payload.data.decode("UTF-8")
     return payload
 
-def extract(source, db_url, db_user, db_password):
+def read_config(table, url, user, password):
+    """
+    Read the ETL source to target mapping configuration
+    """    
+    
+    config_df = (
+        spark.read
+        .format("jdbc")
+        .option("driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver")   
+        .option("url", url)
+        .option("dbtable", table)
+        .option("user", user)
+        .option("password", password)
+        .load()
+    )
+
+    config = config_df.collect()
+    return config
+
+def extract(table, url, user, password, partitionColumn, lowerBound, upperBound, numPartitions):
     """
     Read from source and return a dataframe
     """    
@@ -30,20 +49,20 @@ def extract(source, db_url, db_user, db_password):
         spark.read
         .format("jdbc")
         .option("driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver")   
-        .option("url", db_url)
-        .option("dbtable", source)
-        .option("user", db_user)
-        .option("password", db_password)
-        .option("partitionColumn", "SalesOrderDetailID")
-        .option("lowerBound", "1")
-        .option("upperBound", "11767749")
-        .option("numPartitions", "8")        
+        .option("url", url)
+        .option("dbtable", table)
+        .option("user", user)
+        .option("password", password)
+        .option("partitionColumn", partitionColumn)
+        .option("lowerBound", lowerBound)
+        .option("upperBound", upperBound)
+        .option("numPartitions", numPartitions)        
         .load()
     )
 
     return extract_df
 
-def load(df, dataset_name, target):
+def load(df, target):
     """
     Write to target table
     """   
@@ -53,7 +72,7 @@ def load(df, dataset_name, target):
     (df.write
         .format('bigquery')
         .mode("overwrite")
-        .option("table", f"{dataset_name}.{target}")
+        .option("table", target)
         .option("writeMethod", "direct")
         .save())
 
@@ -65,19 +84,19 @@ if __name__ == "__main__":
     project_id = sys.argv[1]
 
     # Retrieve secret manager secrets
-    db_user = access_secret(project_id, "airflow-variables-cloudsql-username")
-    db_password = access_secret(project_id, "airflow-variables-cloudsql-password")
-    db_ip = access_secret(project_id, "airflow-variables-cloudsql-ip")
+    user = access_secret(project_id, "airflow-variables-cloudsql-username")
+    password = access_secret(project_id, "airflow-variables-cloudsql-password")
+    ip = access_secret(project_id, "airflow-variables-cloudsql-ip")
 
     # Source variables
     database = "AdventureWorks2022"
-    db_url = f"jdbc:sqlserver://{db_ip};databaseName={database};encrypt=true;trustServerCertificate=true;"
-    source_table = 'Sales.SalesOrderDetail_Big'
+    url = f"jdbc:sqlserver://{ip};databaseName={database};encrypt=true;trustServerCertificate=true;"
+    config_table = "adventureworks_raw.elt_config"
 
-    # Sink variables
-    dataset_name = "adventureworks_temp"  
-    target_table = 'SalesOrderDetail_Big'
+    # Read ETL configuration
+    config = read_config(config_table, url, user, password)    
 
     # Loop through ETL configuration, read source and load to target
-    df = extract(source_table, db_url, db_user, db_password)
-    load(df, dataset_name, target_table)
+    for row in config:    
+        df = extract(row["sourceTableName"], url, user, password, row["partitionColumn"], row["lowerBound"], row["upperBound"], row["numPartitions"])
+        load(df, row["targetTableName"])
