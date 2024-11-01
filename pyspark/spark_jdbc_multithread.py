@@ -43,7 +43,7 @@ def extract(table, url, user, password, partitionColumn, lowerBound, upperBound,
     Read from source and return a dataframe
     """    
     
-    print(f'source: {source}')
+    print(f'source: {table}')
 
     extract_df = (
         spark.read
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     # Source variables
     database = "AdventureWorks2022"
     url = f"jdbc:sqlserver://{ip};databaseName={database};encrypt=true;trustServerCertificate=true;"
-    config_table = "adventureworks_raw.elt_config"
+    config_table = "dbo.etl_config_multiThread"
 
     # Read ETL configuration
     config = read_config(config_table, url, user, password)    
